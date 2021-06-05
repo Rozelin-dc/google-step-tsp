@@ -9,15 +9,20 @@ typedef struct {
 } coordinate_t;
 
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
+void doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
+bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2);
 void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNum);
 void outputCsv(const vector<int>& path, const string targetDataNum);
 
 int main(int argc, char *argv[]) {
   string targetDataNum = argv[1];
-  unordered_map<int, coordinate_t> data; // インデックスをキー座標を値に持つ
+  unordered_map<int, coordinate_t> data; // インデックスをキー、座標を値に持つ
   vector<int> path = {0}; // 訪れる座標のインデックスが順に保存されている配列
   readInput(data, targetDataNum);
   greedySearch(data, path);
+  for (int i = 0; i < (int)data.size(); i++) {
+    doTwoOpt(data, path);
+  }
   outputCsv(path, targetDataNum);
 }
 
@@ -55,8 +60,45 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
     path.push_back(minDistanceIndex);
     data.erase(fromIndex);
   }
-  cout<<"finish search"<<endl;
   return;
+}
+
+/** 貪欲法で見つけた path に 2-opt をかける */
+void doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
+  for (int i = 0; i < (int)path.size() - 1; i++) {
+    coordinate_t from1 = data.at(path[i]);
+    coordinate_t to1 = data.at(path[i + 1]);
+    for (int j = i + 2; j < (int)path.size() - 1; j++) {
+      coordinate_t from2 = data.at(path[j]);
+      coordinate_t to2 = data.at(path[j + 1]);
+
+      // パスがクロスしていたら path を一部指定して再度貪欲法で探索
+      if (isPathCrossing(from1, to1, from2, to2)) {
+        vector<int> newPath;
+        std::copy(path.begin(), path.begin() + i, std::back_inserter(newPath));
+        newPath.push_back(path[j + 1]);
+
+        unordered_map<int, coordinate_t> newData = data;
+
+        for (int k = 0; k < (int)newPath.size() - 1; k++) {
+          newData.erase(newPath[k]);
+        }
+        greedySearch(newData, newPath);
+        path = newPath;
+        return;
+      }
+    }
+  }
+  return;
+}
+
+/** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */
+bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2) {
+  if (from1.x > from2.x && to1.x < to2.x) return true;
+  if (from1.x < from2.x && to1.x > to2.x) return true;
+  if (from1.y > from2.y && to1.y < to2.y) return true;
+  if (from1.y < from2.y && to1.y > to2.y) return true;
+  return false;
 }
 
 /** 座標データの読み込み */
@@ -64,7 +106,7 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
   std::ifstream ifs("./input_" + targetDataNum + ".csv");
   if (ifs.fail()) {
     cerr<<"Failed to open file."<<endl;
-    return;
+    exit(1);
   }
   string str;
   int i = -1;
@@ -80,7 +122,6 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
     i++;
   }
   ifs.close();
-  cout<<"finish read"<<endl;
   return;
 }
 
@@ -89,13 +130,12 @@ void outputCsv(const vector<int>& path, const string targetDataNum) {
   std::ofstream ofs("./output_" + targetDataNum + ".csv");
   if (ofs.fail()) {
     cerr<<"Failed to open file."<<endl;
-    return;
+    exit(1);
   }
   ofs<<"index"<<endl;
   for (int i = 0; i < (int)path.size(); i++) {
     ofs<<path[i]<<endl;
   }
   ofs.close();
-  cout<<"finish output"<<endl;
   return;
 }

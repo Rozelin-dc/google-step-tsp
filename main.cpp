@@ -18,7 +18,12 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
 void outputCsv(const vector<int>& path, const string targetDataNum);
 
 int main(int argc, char *argv[]) {
+  if (argc == 1) {
+    cerr<<"Please input target data number."<<endl;
+    return 1;
+  }
   string targetDataNum = argv[1];
+
   unordered_map<int, coordinate_t> data; // インデックスをキー、座標を値に持つ
   vector<int> path = {0}; // 訪れる座標のインデックスが順に保存されている配列
   readInput(data, targetDataNum);

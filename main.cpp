@@ -9,7 +9,7 @@ typedef struct {
 } coordinate_t;
 
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
-void doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
+bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2);
 void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNum);
 void outputCsv(const vector<int>& path, const string targetDataNum);
@@ -20,9 +20,14 @@ int main(int argc, char *argv[]) {
   vector<int> path = {0}; // 訪れる座標のインデックスが順に保存されている配列
   readInput(data, targetDataNum);
   greedySearch(data, path);
-  for (int i = 0; i < (int)data.size(); i++) {
-    doTwoOpt(data, path);
-  }
+
+  /* bool isTwoOptDone = true;
+  int count = 0;
+  while (isTwoOptDone && count < (int)(data.size() * 2)) {
+    isTwoOptDone = doTwoOpt(data, path);
+    count++;
+  } */
+  doTwoOpt(data, path);
   outputCsv(path, targetDataNum);
 }
 
@@ -64,7 +69,7 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
 }
 
 /** 貪欲法で見つけた path に 2-opt をかける */
-void doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
+bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
   for (int i = 0; i < (int)path.size() - 1; i++) {
     coordinate_t from1 = data.at(path[i]);
     coordinate_t to1 = data.at(path[i + 1]);
@@ -72,24 +77,31 @@ void doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
       coordinate_t from2 = data.at(path[j]);
       coordinate_t to2 = data.at(path[j + 1]);
 
-      // パスがクロスしていたら path を一部指定して再度貪欲法で探索
+      // パスがクロスしていたら path を再構築
       if (isPathCrossing(from1, to1, from2, to2)) {
         vector<int> newPath;
-        std::copy(path.begin(), path.begin() + i, std::back_inserter(newPath));
+        std::copy(path.begin(), path.begin() + i + 1, back_inserter(newPath));
+        newPath.push_back(path[j]);
+
+        if (i + 2 != j) {
+          vector<int> swapPath;
+          std::copy(path.begin() + i + 2, path.begin() + j, back_inserter(swapPath));
+          reverse(swapPath.begin(), swapPath.end());
+
+          newPath.insert(newPath.end(), swapPath.begin(), swapPath.end());
+        }
+
+        newPath.push_back(path[i + 1]);
         newPath.push_back(path[j + 1]);
 
-        unordered_map<int, coordinate_t> newData = data;
+        std::copy(path.begin() + j + 2, path.end(), back_inserter(newPath));
 
-        for (int k = 0; k < (int)newPath.size() - 1; k++) {
-          newData.erase(newPath[k]);
-        }
-        greedySearch(newData, newPath);
         path = newPath;
-        return;
+        return true;
       }
     }
   }
-  return;
+  return false;
 }
 
 /** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */

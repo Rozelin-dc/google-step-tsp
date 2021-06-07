@@ -21,13 +21,13 @@ int main(int argc, char *argv[]) {
   readInput(data, targetDataNum);
   greedySearch(data, path);
 
-  /* bool isTwoOptDone = true;
+  bool isTwoOptDone = true;
   int count = 0;
   while (isTwoOptDone && count < (int)(data.size() * 2)) {
     isTwoOptDone = doTwoOpt(data, path);
     count++;
-  } */
-  doTwoOpt(data, path);
+  }
+
   outputCsv(path, targetDataNum);
 }
 
@@ -106,10 +106,13 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
 
 /** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2) {
-  if (from1.x > from2.x && to1.x < to2.x) return true;
-  if (from1.x < from2.x && to1.x > to2.x) return true;
-  if (from1.y > from2.y && to1.y < to2.y) return true;
-  if (from1.y < from2.y && to1.y > to2.y) return true;
+  if (
+    ((from1.x - to1.x) * ( from2.y - from1.y) + (from1.y - to1.y) * (from1.x - from2.x))
+      * ((from1.x - to1.x) * ( to2.y - from1.y) + (from1.y - to1.y) * (from1.x - to2.x)) < 0 &&
+    ((from2.x - to2.x) * (from1.y - from2.y) + (from2.y - to2.y) * (from2.x - from1.x))
+      * ((from2.x - to2.x) * (to1.y - from2.y) + (from2.y - to2.y) * (from2.x - to1.x)) < 0
+  ) return true;
+
   return false;
 }
 

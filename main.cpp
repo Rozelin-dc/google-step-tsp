@@ -4,6 +4,7 @@ using ld = long double;
 
 /** 座標の構造体 */
 typedef struct {
+  int index;
   ld x;
   ld y;
 } coordinate_t;
@@ -80,14 +81,18 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
   return;
 }
 
-/** 貪欲法で見つけた path に 2-opt をかける */
+/** path に 2-opt をかける */
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
   for (int i = 0; i < (int)path.size() - 1; i++) {
     coordinate_t from1 = data.at(path[i]);
     coordinate_t to1 = data.at(path[i + 1]);
-    for (int j = i + 2; j < (int)path.size() - 1; j++) {
+    for (int j = i + 2; j < (int)path.size(); j++) {
       coordinate_t from2 = data.at(path[j]);
-      coordinate_t to2 = data.at(path[j + 1]);
+      coordinate_t to2;
+
+      if (i == 0 && j + 1 == (int)path.size()) break;
+      if (j + 1 == (int)path.size()) to2 = data.at(path.front());
+      else to2 = data.at(path[j + 1]);
 
       // パスがクロスしていたら path を再構築
       if (isPathCrossing(from1, to1, from2, to2)) {
@@ -104,7 +109,7 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
         }
 
         newPath.push_back(path[i + 1]);
-        newPath.push_back(path[j + 1]);
+        if (to2.index != 0) newPath.push_back(path[j + 1]);
 
         std::copy(path.begin() + j + 2, path.end(), back_inserter(newPath));
 
@@ -168,7 +173,7 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
     auto index = str.find(',');
     auto x = str.substr(0, index);
     auto y = str.substr(index + 1, str.size() - x.size() - 1);
-    data[i] = {(ld)std::stod(x), (ld)std::stod(y)};
+    data[i] = {i, (ld)std::stod(x), (ld)std::stod(y)};
     i++;
   }
   ifs.close();

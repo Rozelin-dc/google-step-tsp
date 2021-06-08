@@ -2,6 +2,8 @@
 using namespace std;
 using ld = long double;
 
+#define SHORT_ENOUGH_DISTANCE 5
+
 /** 座標の構造体 */
 typedef struct {
   int index;
@@ -13,7 +15,9 @@ ld calculateDistance(const coordinate_t from, const coordinate_t to);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
+bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2);
+bool isPointAndLineSegmentEnoughNear(const coordinate_t from, const coordinate_t to, const coordinate_t p);
 void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNum);
 void outputCsv(const vector<int>& path, const string targetDataNum);
 
@@ -31,8 +35,12 @@ int main(int argc, char *argv[]) {
 
   bool isTwoOptDone = true;
   bool isSwapFivePointDone = true;
+  bool isNearLineSegmentPointPathChange = true;
   for (int i = 0; i < (int)(data.size() * 2); i++) {
-    if (isTwoOptDone || isSwapFivePointDone) isTwoOptDone = doTwoOpt(data, path);
+    if (isTwoOptDone || isSwapFivePointDone || isNearLineSegmentPointPathChange) {
+      isTwoOptDone = doTwoOpt(data, path);
+      isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
+    }
     isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
   }
 
@@ -147,6 +155,51 @@ bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& pa
   return false;
 }
 
+/** 線分の近くにある点のパスを変える */
+bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
+  for (int i = 0; i < (int)data.size(); i++) {
+    coordinate_t from = data.at(path[i]);
+    coordinate_t to = data.at(path[(i + 1) % (int)data.size()]);
+
+    for (int j = 0; j < (int)data.size(); j++) {
+      if (j == from.index || j == to.index) continue;
+
+      coordinate_t p = data.at(path[j]);
+      // p が from と to を結ぶ線分と十分に近かったら path 組み換え
+      if (isPointAndLineSegmentEnoughNear(from, to, p)) {
+        vector<int> newPath;
+        if (to.index == path.front()) {
+          std::copy(path.begin(), path.begin() + p.index, back_inserter(newPath));
+          std::copy(path.begin() + p.index + 1, path.end(), back_inserter(newPath));
+          newPath.push_back(p.index);
+
+          path = newPath;
+        } else if (p.index > to.index) {
+          std::copy(path.begin(), path.begin() + from.index + 1, back_inserter(newPath));
+
+          newPath.push_back(p.index);
+
+          std::copy(path.begin() + to.index, path.begin() + p.index, back_inserter(newPath));
+          std::copy(path.begin() + p.index + 1, path.end(), back_inserter(newPath));
+
+          path = newPath;
+        } else {
+          std::copy(path.begin(), path.begin() + p.index , back_inserter(newPath));
+          std::copy(path.begin() + p.index + 1, path.begin() + from.index + 1, back_inserter(newPath));
+
+          newPath.push_back(p.index);
+
+          std::copy(path.begin() + to.index, path.end(), back_inserter(newPath));
+
+          path = newPath;
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2) {
   ld s, t;
@@ -158,6 +211,40 @@ bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coor
   t = (from2.x - to2.x) * (to1.y - from2.y) - (from2.y - to2.y) * (to1.x - from2.x);
   if (s * t >= 0) return false;
     
+  return true;
+}
+
+/** from と to を結ぶ線分と p との距離が十分近いかどうか */
+bool isPointAndLineSegmentEnoughNear(const coordinate_t from, const coordinate_t to, const coordinate_t p) {
+  coordinate_t h; // 垂線の足
+
+  if(from.x == to.x){ // 線分が垂直の場合
+    h.x = from.x;
+    h.y = p.y;
+  } else if(from.y == to.y){ // 線分が水平の場合
+    h.x = p.x;
+    h.y = from.y;
+  } else{ // それ以外
+    ld m1, m2, b1, b2;
+
+    m1 = (to.y - from.y) / (to.x - from.x); // 線分の傾き
+    b1 = from.y - (m1 * from.x); // 線分のy切片
+
+    m2 = -1.0 / m1; // 点 p を通り、線分に垂直な線の傾き
+    b2 = p.y - (m2 * p.x); // 点 p を通り、線分に垂直な線のy切片
+
+    // 交点算出
+    h.x = (b2 - b1) / (m1 - m2);
+    h.y = (b2 * m1 - b1 * m2) / (m1 - m2);
+  }
+
+  // h が線分上に無ければ
+  if (h.y > from.y && h.y > to.y) return false;
+  if (h.y < from.y && h.y < to.y) return false;
+  if (h.x > from.x && h.x > to.x) return false;
+  if (h.x < from.x && h.x < to.x) return false;
+
+  if(calculateDistance(p, h) > SHORT_ENOUGH_DISTANCE) return false;
   return true;
 }
 

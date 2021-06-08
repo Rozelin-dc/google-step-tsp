@@ -29,16 +29,11 @@ int main(int argc, char *argv[]) {
   readInput(data, targetDataNum);
   greedySearch(data, path);
 
-  default_random_engine eng((int)time(NULL));
-  uniform_int_distribution<int> distr(0, (int)data.size() - 5);
-
   bool isTwoOptDone = true;
-  bool isSwapFourPointDone = true;
-  int count = 0;
-  while ((isTwoOptDone || isSwapFourPointDone) && count < (int)(data.size() * 2)) {
-    isTwoOptDone = doTwoOpt(data, path);
-    isSwapFourPointDone = swapFivePoint(data, path, distr(eng));
-    count++;
+  bool isSwapFivePointDone = true;
+  for (int i = 0; i < (int)(data.size() * 2); i++) {
+    if (isTwoOptDone || isSwapFivePointDone) isTwoOptDone = doTwoOpt(data, path);
+    isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
   }
 
   outputCsv(path, targetDataNum);
@@ -128,20 +123,25 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
 
 /** 5 点を結ぶパスについて最適化 */
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index) {
-  coordinate_t first = data.at(path[index]);
-  coordinate_t second = data.at(path[index + 1]);
-  coordinate_t third = data.at(path[index + 2]);
-  coordinate_t forth = data.at(path[index + 3]);
-  coordinate_t fifth = data.at(path[index + 4]);
+  int firstIndex = index;
+  int secondIndex = (index + 1) % (int)data.size();
+  int thirdIndex = (index + 2) % (int)data.size();
+  int forthIndex = (index + 3) % (int)data.size();
+  int fifthIndex = (index + 4) % (int)data.size();
+  coordinate_t first = data.at(path[firstIndex]);
+  coordinate_t second = data.at(path[secondIndex]);
+  coordinate_t third = data.at(path[thirdIndex]);
+  coordinate_t forth = data.at(path[forthIndex]);
+  coordinate_t fifth = data.at(path[fifthIndex]);
 
   ld currentDistance = calculateDistance(first, second) + calculateDistance(second, third) + calculateDistance(third, forth) + calculateDistance(forth, fifth);
   ld anotherDistance = calculateDistance(first, third) + calculateDistance(third, forth) + calculateDistance(forth, second) + calculateDistance(second, fifth);
 
   if (anotherDistance < currentDistance) {
-    int swap = path[index + 1];
-    path[index + 1] = path[index + 2];
-    path[index + 2] = path[index + 3];
-    path[index + 3] = swap;
+    int swap = path[secondIndex];
+    path[secondIndex] = path[thirdIndex];
+    path[thirdIndex] = path[forthIndex];
+    path[forthIndex] = swap;
     return true;
   }
   return false;

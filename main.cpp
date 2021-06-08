@@ -2,7 +2,7 @@
 using namespace std;
 using ld = long double;
 
-#define SHORT_ENOUGH_DISTANCE 5
+#define SHORT_ENOUGH_DISTANCE 10.0
 
 /** 座標の構造体 */
 typedef struct {
@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
   bool isNearLineSegmentPointPathChange = true;
   for (int i = 0; i < (int)(data.size() * 2); i++) {
     if (isTwoOptDone || isSwapFivePointDone || isNearLineSegmentPointPathChange) {
-      isTwoOptDone = doTwoOpt(data, path);
       isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
+      isTwoOptDone = doTwoOpt(data, path);
     }
     isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
   }
@@ -106,7 +106,7 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
       if (isPathCrossing(from1, to1, from2, to2)) {
         vector<int> newPath;
         std::copy(path.begin(), path.begin() + i + 1, back_inserter(newPath));
-        newPath.push_back(path[j]);
+        newPath.push_back(from2.index);
 
         if (i + 2 != j) {
           vector<int> swapPath;
@@ -116,8 +116,8 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
           newPath.insert(newPath.end(), swapPath.begin(), swapPath.end());
         }
 
-        newPath.push_back(path[i + 1]);
-        if (to2.index != 0) newPath.push_back(path[j + 1]);
+        newPath.push_back(to1.index);
+        if (to2.index != path.front()) newPath.push_back(to2.index);
 
         std::copy(path.begin() + j + 2, path.end(), back_inserter(newPath));
 
@@ -162,37 +162,32 @@ bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data
     coordinate_t to = data.at(path[(i + 1) % (int)data.size()]);
 
     for (int j = 0; j < (int)data.size(); j++) {
-      if (j == from.index || j == to.index) continue;
+      if (j == i || j == i + 1) continue;
 
       coordinate_t p = data.at(path[j]);
       // p が from と to を結ぶ線分と十分に近かったら path 組み換え
       if (isPointAndLineSegmentEnoughNear(from, to, p)) {
         vector<int> newPath;
         if (to.index == path.front()) {
-          std::copy(path.begin(), path.begin() + p.index, back_inserter(newPath));
-          std::copy(path.begin() + p.index + 1, path.end(), back_inserter(newPath));
+          std::copy(path.begin(), path.begin() + j, back_inserter(newPath));
+          std::copy(path.begin() + j + 1, path.end(), back_inserter(newPath));
+          newPath.push_back(p.index);
+        } else if (j > i + 1) {
+          std::copy(path.begin(), path.begin() + i + 1, back_inserter(newPath));
+
           newPath.push_back(p.index);
 
-          path = newPath;
-        } else if (p.index > to.index) {
-          std::copy(path.begin(), path.begin() + from.index + 1, back_inserter(newPath));
-
-          newPath.push_back(p.index);
-
-          std::copy(path.begin() + to.index, path.begin() + p.index, back_inserter(newPath));
-          std::copy(path.begin() + p.index + 1, path.end(), back_inserter(newPath));
-
-          path = newPath;
+          std::copy(path.begin() + i + 1, path.begin() + j, back_inserter(newPath));
+          std::copy(path.begin() + j + 1, path.end(), back_inserter(newPath));
         } else {
-          std::copy(path.begin(), path.begin() + p.index , back_inserter(newPath));
-          std::copy(path.begin() + p.index + 1, path.begin() + from.index + 1, back_inserter(newPath));
+          std::copy(path.begin(), path.begin() + j , back_inserter(newPath));
+          std::copy(path.begin() + j + 1, path.begin() + i + 1, back_inserter(newPath));
 
           newPath.push_back(p.index);
 
-          std::copy(path.begin() + to.index, path.end(), back_inserter(newPath));
-
-          path = newPath;
+          std::copy(path.begin() + i + 1, path.end(), back_inserter(newPath));
         }
+        path = newPath;
         return true;
       }
     }

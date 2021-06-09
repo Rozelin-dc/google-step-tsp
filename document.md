@@ -49,9 +49,13 @@ https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/で結果�
 
 2つのパスがクロスしていた場合、下の図のようにパスを組み替える。
 
-![](./figure.png)
+![](./figure1.png)
 
 #### `swapFivePoint`
+
+`data`と`path`と`index`を受け取り、`path[index]`から始まる5点を結ぶパスについて、始点と終点はそのままに、現在のパスの長さともう1つ考えられるパスの長さを比較し、もう1つ考えられるパスの長さの方が短ければパスを組み替える関数。
+
+![](./figure2.png)
 
 #### `nearLineSegmentPointPathChange`
 
@@ -60,6 +64,8 @@ https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/で結果�
 座標データ`from1`, `to1`, `from2`, `to2`を引数として受け取り、`from1`と`to1`を結ぶ線分と`from2`と`to2`を結ぶ線分が交差しているかどうかを返す関数。交差していたら`true`を返す。
 
 #### `isPointAndLineSegmentEnoughNear`
+
+座標データ`from`, `to`, `p`を引数として受け取り、`from`と`to`を結ぶ直線と`p`との距離の二乗が`SHORT_ENOUGH_DISTANCE`よりも小さく、かつ`p`から`from`と`to`を結ぶ直線におろした垂線の足`h`が`from`と`to`を結ぶ線分上にあれば`true`を返す関数。
 
 #### `readInput`
 

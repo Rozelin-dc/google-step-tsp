@@ -58,8 +58,9 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
     ld distance; // 距離の二乗
     ld minDistance = -1; // 距離の二乗の最小値
     int minDistanceIndex = -1; // 最小の距離となる座標のインデックス
-    int fromIndex = path[path.size() - 1];
-    coordinate_t from = data.at(fromIndex);
+    int fromIndex = path[path.size() - 1]; // 今いる座標のインデックス
+    coordinate_t from = data.at(fromIndex); // 今いる座標のデータ
+
     // 距離の二乗が最小となる座標を探す
     for (auto itr = data.begin(); itr != data.end(); ++itr) {
       if (itr->first == fromIndex) continue;
@@ -67,7 +68,7 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
       coordinate_t to = itr->second;
       distance = calculateDistance(from, to);
 
-      if (minDistance == -1) {
+      if (minDistance == -1) { // 最初の座標についての処理
         minDistance = distance;
         minDistanceIndex = itr->first;
         continue;
@@ -77,7 +78,7 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
       if (minDistance == distance) minDistanceIndex = itr->first;
     }
 
-    if (minDistanceIndex == -1) {
+    if (minDistanceIndex == -1) { // for文内で正しく処理が行われなかったらエラー
       cerr<<"error!"<<endl;
       exit(1);
     }
@@ -92,13 +93,15 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
 /** path に 2-opt をかける */
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
   for (int i = 0; i < (int)path.size() - 1; i++) {
-    coordinate_t from1 = data.at(path[i]);
-    coordinate_t to1 = data.at(path[i + 1]);
-    for (int j = i + 2; j < (int)path.size(); j++) {
-      coordinate_t from2 = data.at(path[j]);
-      coordinate_t to2;
+    coordinate_t from1 = data.at(path[i]); // 1本目のパスの始点
+    coordinate_t to1 = data.at(path[i + 1]); // 1本目のパスの終点
 
-      if (i == 0 && j + 1 == (int)path.size()) break;
+    for (int j = i + 2; j < (int)path.size(); j++) {
+      coordinate_t from2 = data.at(path[j]); // 2本目のパスの始点
+      coordinate_t to2; // 2本目のパスの終点
+
+      if (i == 0 && j + 1 == (int)path.size()) break; // 1本目のパスの終点と2本目のパスの始点が同じだったら
+
       if (j + 1 == (int)path.size()) to2 = data.at(path.front());
       else to2 = data.at(path[j + 1]);
 

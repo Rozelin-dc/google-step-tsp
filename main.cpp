@@ -37,11 +37,11 @@ int main(int argc, char *argv[]) {
   bool isSwapFivePointDone = true;
   bool isNearLineSegmentPointPathChange = true;
   for (int i = 0; i < (int)(data.size() * 2); i++) {
+    isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
     if (isTwoOptDone || isSwapFivePointDone || isNearLineSegmentPointPathChange) {
       isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
       isTwoOptDone = doTwoOpt(data, path);
     }
-    isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
   }
 
   outputCsv(path, targetDataNum);

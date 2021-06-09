@@ -1,4 +1,8 @@
-# [main.cpp](./main.cpp)の説明
+# [main.cpp](./main.cpp)について
+
+## 使用言語
+
+C++(g++ 8.1.0)
 
 ## 実行方法
 

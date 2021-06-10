@@ -13,7 +13,7 @@ a.exe num
 
 `num`は`input.csv`の番号で、`input_${num}.csv`を読み込んでtspを解き、結果を`output_${num}.csv`に出力する。(`num`は0~6の範囲の数字である必要がある。)
 
-https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/で結果を確認できる。
+https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/ で結果を確認できる。
 
 ## プログラムの説明
 

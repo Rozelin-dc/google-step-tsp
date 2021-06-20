@@ -1,15 +1,14 @@
 #include <bits/stdc++.h>
 using namespace std;
-using ld = long double;
 
 /** 座標の構造体 */
 typedef struct {
   int index;
-  ld x;
-  ld y;
+  long double x;
+  long double y;
 } coordinate_t;
 
-ld calculateDistance(const coordinate_t from, const coordinate_t to);
+long double calculateDistance(const coordinate_t from, const coordinate_t to);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
@@ -40,15 +39,15 @@ int main(int argc, char *argv[]) {
 }
 
 /** from から to までの距離の二乗を計算 */
-ld calculateDistance(const coordinate_t from, const coordinate_t to) {
+long double calculateDistance(const coordinate_t from, const coordinate_t to) {
   return ((from.x - to.x) * (from.x - to.x)) + ((from.y - to.y) * (from.y - to.y));
 }
 
 /** 貪欲法で経路検索 */
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
   while (data.size() > 1) {
-    ld distance; // 距離の二乗
-    ld minDistance = -1; // 距離の二乗の最小値
+    long double distance; // 距離の二乗
+    long double minDistance = -1; // 距離の二乗の最小値
     int minDistanceIndex = -1; // 最小の距離となる座標のインデックス
     int fromIndex = path[path.size() - 1];
     coordinate_t from = data.at(fromIndex);
@@ -65,8 +64,10 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
         continue;
       }
 
-      minDistance = std::min(minDistance, distance);
-      if (minDistance == distance) minDistanceIndex = itr->first;
+      if (distance < minDistance) {
+        minDistance = distance;
+        minDistanceIndex = itr->first;
+      }
     }
 
     if (minDistanceIndex == -1) {
@@ -129,8 +130,8 @@ bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& pa
   coordinate_t forth = data.at(path[index + 3]);
   coordinate_t fifth = data.at(path[index + 4]);
 
-  ld currentDistance = calculateDistance(first, second) + calculateDistance(second, third) + calculateDistance(third, forth) + calculateDistance(forth, fifth);
-  ld anotherDistance = calculateDistance(first, third) + calculateDistance(third, forth) + calculateDistance(forth, second) + calculateDistance(second, fifth);
+  long double currentDistance = sqrt(calculateDistance(first, second)) + sqrt(calculateDistance(second, third)) + sqrt(calculateDistance(third, forth)) + sqrt(calculateDistance(forth, fifth));
+  long double anotherDistance = sqrt(calculateDistance(first, third)) + sqrt(calculateDistance(third, forth)) + sqrt(calculateDistance(forth, second)) + sqrt(calculateDistance(second, fifth));
 
   if (anotherDistance < currentDistance) {
     int swap = path[index + 1];
@@ -144,7 +145,7 @@ bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& pa
 
 /** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2) {
-  ld s, t;
+  long double s, t;
   s = (from1.x - to1.x) * (from2.y - from1.y) - (from1.y - to1.y) * (from2.x - from1.x);
   t = (from1.x - to1.x) * (to2.y - from1.y) - (from1.y - to1.y) * (to2.x - from1.x);
   if (s * t >= 0) return false;
@@ -173,7 +174,7 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
     auto index = str.find(',');
     auto x = str.substr(0, index);
     auto y = str.substr(index + 1, str.size() - x.size() - 1);
-    data[i] = {i, (ld)std::stod(x), (ld)std::stod(y)};
+    data[i] = {i, (long double)std::stod(x), (long double)std::stod(y)};
     i++;
   }
   ifs.close();

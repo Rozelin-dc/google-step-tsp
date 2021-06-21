@@ -1,6 +1,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+#define SHORT_ENOUGH_DISTANCE 12.0
+
 /** 座標の構造体 */
 typedef struct {
   int index;
@@ -12,7 +14,9 @@ long double calculateDistance(const coordinate_t from, const coordinate_t to);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
+bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2);
+bool isPointAndLineSegmentEnoughNear(const coordinate_t from, const coordinate_t to, const coordinate_t p);
 void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNum);
 void outputCsv(const vector<int>& path, const string targetDataNum);
 
@@ -23,16 +27,15 @@ int main(int argc, char *argv[]) {
   readInput(data, targetDataNum);
   greedySearch(data, path);
 
-  default_random_engine eng((int)time(NULL));
-  uniform_int_distribution<int> distr(0, (int)data.size() - 5);
-
   bool isTwoOptDone = true;
-  bool isSwapFourPointDone = true;
-  int count = 0;
-  while ((isTwoOptDone || isSwapFourPointDone) && count < (int)(data.size() * 2)) {
-    isTwoOptDone = doTwoOpt(data, path);
-    isSwapFourPointDone = swapFivePoint(data, path, distr(eng));
-    count++;
+  bool isSwapFivePointDone = true;
+  bool isNearLineSegmentPointPathChange = true;
+  for (int i = 0; i < (int)(data.size() * 2); i++) {
+    isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
+    if (isTwoOptDone || isSwapFivePointDone || isNearLineSegmentPointPathChange) {
+      isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
+      isTwoOptDone = doTwoOpt(data, path);
+    }
   }
 
   outputCsv(path, targetDataNum);
@@ -85,13 +88,15 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
 /** path に 2-opt をかける */
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
   for (int i = 0; i < (int)path.size() - 1; i++) {
-    coordinate_t from1 = data.at(path[i]);
-    coordinate_t to1 = data.at(path[i + 1]);
-    for (int j = i + 2; j < (int)path.size(); j++) {
-      coordinate_t from2 = data.at(path[j]);
-      coordinate_t to2;
+    coordinate_t from1 = data.at(path[i]); // 1本目のパスの始点
+    coordinate_t to1 = data.at(path[i + 1]); // 1本目のパスの終点
 
-      if (i == 0 && j + 1 == (int)path.size()) break;
+    for (int j = i + 2; j < (int)path.size(); j++) {
+      coordinate_t from2 = data.at(path[j]); // 2本目のパスの始点
+      coordinate_t to2; // 2本目のパスの終点
+
+      if (i == 0 && j + 1 == (int)path.size()) break; // 1本目のパスの終点と2本目のパスの始点が同じだったら
+
       if (j + 1 == (int)path.size()) to2 = data.at(path.front());
       else to2 = data.at(path[j + 1]);
 
@@ -99,7 +104,7 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
       if (isPathCrossing(from1, to1, from2, to2)) {
         vector<int> newPath;
         std::copy(path.begin(), path.begin() + i + 1, back_inserter(newPath));
-        newPath.push_back(path[j]);
+        newPath.push_back(from2.index);
 
         if (i + 2 != j) {
           vector<int> swapPath;
@@ -109,8 +114,8 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
           newPath.insert(newPath.end(), swapPath.begin(), swapPath.end());
         }
 
-        newPath.push_back(path[i + 1]);
-        if (to2.index != 0) newPath.push_back(path[j + 1]);
+        newPath.push_back(to1.index);
+        if (to2.index != path.front()) newPath.push_back(to2.index);
 
         std::copy(path.begin() + j + 2, path.end(), back_inserter(newPath));
 
@@ -124,24 +129,70 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
 
 /** 5 点を結ぶパスについて最適化 */
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index) {
-  coordinate_t first = data.at(path[index]);
-  coordinate_t second = data.at(path[index + 1]);
-  coordinate_t third = data.at(path[index + 2]);
-  coordinate_t forth = data.at(path[index + 3]);
-  coordinate_t fifth = data.at(path[index + 4]);
+  int firstIndex = index;
+  int secondIndex = (index + 1) % (int)data.size();
+  int thirdIndex = (index + 2) % (int)data.size();
+  int forthIndex = (index + 3) % (int)data.size();
+  int fifthIndex = (index + 4) % (int)data.size();
+  coordinate_t first = data.at(path[firstIndex]);
+  coordinate_t second = data.at(path[secondIndex]);
+  coordinate_t third = data.at(path[thirdIndex]);
+  coordinate_t forth = data.at(path[forthIndex]);
+  coordinate_t fifth = data.at(path[fifthIndex]);
 
   long double currentDistance = sqrt(calculateDistance(first, second)) + sqrt(calculateDistance(second, third)) + sqrt(calculateDistance(third, forth)) + sqrt(calculateDistance(forth, fifth));
   long double anotherDistance = sqrt(calculateDistance(first, third)) + sqrt(calculateDistance(third, forth)) + sqrt(calculateDistance(forth, second)) + sqrt(calculateDistance(second, fifth));
 
   if (anotherDistance < currentDistance) {
-    int swap = path[index + 1];
-    path[index + 1] = path[index + 2];
-    path[index + 2] = path[index + 3];
-    path[index + 3] = swap;
+    int swap = path[secondIndex];
+    path[secondIndex] = path[thirdIndex];
+    path[thirdIndex] = path[forthIndex];
+    path[forthIndex] = swap;
     return true;
   }
   return false;
 }
+
+/** 線分の近くにある点のパスを変える */
+bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
+  for (int i = 0; i < (int)data.size(); i++) {
+    coordinate_t from = data.at(path[i]);
+    coordinate_t to = data.at(path[(i + 1) % (int)data.size()]);
+
+    for (int j = 0; j < (int)data.size(); j++) {
+      if (j == i || j == i + 1) continue;
+
+      coordinate_t p = data.at(path[j]);
+      // p が from と to を結ぶ線分と十分に近かったら path 組み換え
+      if (isPointAndLineSegmentEnoughNear(from, to, p)) {
+        vector<int> newPath;
+        if (to.index == path.front()) {
+          std::copy(path.begin(), path.begin() + j, back_inserter(newPath));
+          std::copy(path.begin() + j + 1, path.end(), back_inserter(newPath));
+          newPath.push_back(p.index);
+        } else if (j > i + 1) {
+          std::copy(path.begin(), path.begin() + i + 1, back_inserter(newPath));
+
+          newPath.push_back(p.index);
+
+          std::copy(path.begin() + i + 1, path.begin() + j, back_inserter(newPath));
+          std::copy(path.begin() + j + 1, path.end(), back_inserter(newPath));
+        } else {
+          std::copy(path.begin(), path.begin() + j , back_inserter(newPath));
+          std::copy(path.begin() + j + 1, path.begin() + i + 1, back_inserter(newPath));
+
+          newPath.push_back(p.index);
+
+          std::copy(path.begin() + i + 1, path.end(), back_inserter(newPath));
+        }
+        path = newPath;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 
 /** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2) {
@@ -154,6 +205,40 @@ bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coor
   t = (from2.x - to2.x) * (to1.y - from2.y) - (from2.y - to2.y) * (to1.x - from2.x);
   if (s * t >= 0) return false;
     
+  return true;
+}
+
+/** from と to を結ぶ線分と p との距離が十分近いかどうか */
+bool isPointAndLineSegmentEnoughNear(const coordinate_t from, const coordinate_t to, const coordinate_t p) {
+  coordinate_t h; // 垂線の足
+
+  if(from.x == to.x){ // 線分が垂直の場合
+    h.x = from.x;
+    h.y = p.y;
+  } else if(from.y == to.y){ // 線分が水平の場合
+    h.x = p.x;
+    h.y = from.y;
+  } else{ // それ以外
+    long double m1, m2, b1, b2;
+
+    m1 = (to.y - from.y) / (to.x - from.x); // 線分の傾き
+    b1 = from.y - (m1 * from.x); // 線分のy切片
+
+    m2 = -1.0 / m1; // 点 p を通り、線分に垂直な線の傾き
+    b2 = p.y - (m2 * p.x); // 点 p を通り、線分に垂直な線のy切片
+
+    // 交点算出
+    h.x = (b2 - b1) / (m1 - m2);
+    h.y = (b2 * m1 - b1 * m2) / (m1 - m2);
+  }
+
+  // h が線分上に無ければ
+  if (h.y > from.y && h.y > to.y) return false;
+  if (h.y < from.y && h.y < to.y) return false;
+  if (h.x > from.x && h.x > to.x) return false;
+  if (h.x < from.x && h.x < to.x) return false;
+
+  if(calculateDistance(p, h) > SHORT_ENOUGH_DISTANCE) return false;
   return true;
 }
 

@@ -1,17 +1,16 @@
 #include <bits/stdc++.h>
 using namespace std;
-using ld = long double;
 
-#define SHORT_ENOUGH_DISTANCE 10.0
+#define SHORT_ENOUGH_DISTANCE 12.0
 
 /** 座標の構造体 */
 typedef struct {
   int index;
-  ld x;
-  ld y;
+  long double x;
+  long double y;
 } coordinate_t;
 
-ld calculateDistance(const coordinate_t from, const coordinate_t to);
+long double calculateDistance(const coordinate_t from, const coordinate_t to);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
@@ -22,12 +21,7 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
 void outputCsv(const vector<int>& path, const string targetDataNum);
 
 int main(int argc, char *argv[]) {
-  if (argc == 1) {
-    cerr<<"Please input target data number."<<endl;
-    return 1;
-  }
   string targetDataNum = argv[1];
-
   unordered_map<int, coordinate_t> data; // インデックスをキー、座標を値に持つ
   vector<int> path = {0}; // 訪れる座標のインデックスが順に保存されている配列
   readInput(data, targetDataNum);
@@ -37,26 +31,26 @@ int main(int argc, char *argv[]) {
   bool isSwapFivePointDone = true;
   bool isNearLineSegmentPointPathChange = true;
   for (int i = 0; i < (int)(data.size() * 2); i++) {
+    isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
     if (isTwoOptDone || isSwapFivePointDone || isNearLineSegmentPointPathChange) {
       isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
       isTwoOptDone = doTwoOpt(data, path);
     }
-    isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
   }
 
   outputCsv(path, targetDataNum);
 }
 
 /** from から to までの距離の二乗を計算 */
-ld calculateDistance(const coordinate_t from, const coordinate_t to) {
+long double calculateDistance(const coordinate_t from, const coordinate_t to) {
   return ((from.x - to.x) * (from.x - to.x)) + ((from.y - to.y) * (from.y - to.y));
 }
 
 /** 貪欲法で経路検索 */
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
   while (data.size() > 1) {
-    ld distance; // 距離の二乗
-    ld minDistance = -1; // 距離の二乗の最小値
+    long double distance; // 距離の二乗
+    long double minDistance = -1; // 距離の二乗の最小値
     int minDistanceIndex = -1; // 最小の距離となる座標のインデックス
     int fromIndex = path[path.size() - 1];
     coordinate_t from = data.at(fromIndex);
@@ -73,8 +67,10 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
         continue;
       }
 
-      minDistance = std::min(minDistance, distance);
-      if (minDistance == distance) minDistanceIndex = itr->first;
+      if (distance < minDistance) {
+        minDistance = distance;
+        minDistanceIndex = itr->first;
+      }
     }
 
     if (minDistanceIndex == -1) {
@@ -92,13 +88,15 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
 /** path に 2-opt をかける */
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
   for (int i = 0; i < (int)path.size() - 1; i++) {
-    coordinate_t from1 = data.at(path[i]);
-    coordinate_t to1 = data.at(path[i + 1]);
-    for (int j = i + 2; j < (int)path.size(); j++) {
-      coordinate_t from2 = data.at(path[j]);
-      coordinate_t to2;
+    coordinate_t from1 = data.at(path[i]); // 1本目のパスの始点
+    coordinate_t to1 = data.at(path[i + 1]); // 1本目のパスの終点
 
-      if (i == 0 && j + 1 == (int)path.size()) break;
+    for (int j = i + 2; j < (int)path.size(); j++) {
+      coordinate_t from2 = data.at(path[j]); // 2本目のパスの始点
+      coordinate_t to2; // 2本目のパスの終点
+
+      if (i == 0 && j + 1 == (int)path.size()) break; // 1本目のパスの始点と2本目のパスの終点が同じだったら
+
       if (j + 1 == (int)path.size()) to2 = data.at(path.front());
       else to2 = data.at(path[j + 1]);
 
@@ -142,8 +140,8 @@ bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& pa
   coordinate_t forth = data.at(path[forthIndex]);
   coordinate_t fifth = data.at(path[fifthIndex]);
 
-  ld currentDistance = calculateDistance(first, second) + calculateDistance(second, third) + calculateDistance(third, forth) + calculateDistance(forth, fifth);
-  ld anotherDistance = calculateDistance(first, third) + calculateDistance(third, forth) + calculateDistance(forth, second) + calculateDistance(second, fifth);
+  long double currentDistance = sqrt(calculateDistance(first, second)) + sqrt(calculateDistance(second, third)) + sqrt(calculateDistance(third, forth)) + sqrt(calculateDistance(forth, fifth));
+  long double anotherDistance = sqrt(calculateDistance(first, third)) + sqrt(calculateDistance(third, forth)) + sqrt(calculateDistance(forth, second)) + sqrt(calculateDistance(second, fifth));
 
   if (anotherDistance < currentDistance) {
     int swap = path[secondIndex];
@@ -195,9 +193,10 @@ bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data
   return false;
 }
 
+
 /** from1 と to1 を結ぶパスと from2 と to2 を結ぶパスがクロスしているかどうかを返す関数 */
 bool isPathCrossing(const coordinate_t from1, const coordinate_t to1, const coordinate_t from2, const coordinate_t to2) {
-  ld s, t;
+  long double s, t;
   s = (from1.x - to1.x) * (from2.y - from1.y) - (from1.y - to1.y) * (from2.x - from1.x);
   t = (from1.x - to1.x) * (to2.y - from1.y) - (from1.y - to1.y) * (to2.x - from1.x);
   if (s * t >= 0) return false;
@@ -220,7 +219,7 @@ bool isPointAndLineSegmentEnoughNear(const coordinate_t from, const coordinate_t
     h.x = p.x;
     h.y = from.y;
   } else{ // それ以外
-    ld m1, m2, b1, b2;
+    long double m1, m2, b1, b2;
 
     m1 = (to.y - from.y) / (to.x - from.x); // 線分の傾き
     b1 = from.y - (m1 * from.x); // 線分のy切片
@@ -260,7 +259,7 @@ void readInput(unordered_map<int, coordinate_t>& data, const string targetDataNu
     auto index = str.find(',');
     auto x = str.substr(0, index);
     auto y = str.substr(index + 1, str.size() - x.size() - 1);
-    data[i] = {i, (ld)std::stod(x), (ld)std::stod(y)};
+    data[i] = {i, (long double)std::stod(x), (long double)std::stod(y)};
     i++;
   }
   ifs.close();

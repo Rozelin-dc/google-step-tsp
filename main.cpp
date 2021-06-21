@@ -95,7 +95,7 @@ bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path) {
       coordinate_t from2 = data.at(path[j]); // 2本目のパスの始点
       coordinate_t to2; // 2本目のパスの終点
 
-      if (i == 0 && j + 1 == (int)path.size()) break; // 1本目のパスの終点と2本目のパスの始点が同じだったら
+      if (i == 0 && j + 1 == (int)path.size()) break; // 1本目のパスの始点と2本目のパスの終点が同じだったら
 
       if (j + 1 == (int)path.size()) to2 = data.at(path.front());
       else to2 = data.at(path[j + 1]);

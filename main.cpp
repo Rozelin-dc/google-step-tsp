@@ -152,11 +152,8 @@ void doSearchByChristofidesAlgorithm(
 
   if (visited.size() != data.size()) {
     cerr<<"error!"<<endl;
-    cout<<visited.size()<<", "<<data.size()<<", "<<smallEdgeData.size()<<endl;
     exit(1);
   }
-
-  cout<<"finish saisyouzennikigi kouchiku"<<endl;
   
   unordered_map<int, bool> vertexSetNextOddNumber; // 奇数次の頂点集合(インデックスをキー、最小全域木と統合済みかどうかを値に持つ)
   // 奇数次の頂点集合を構築
@@ -166,17 +163,14 @@ void doSearchByChristofidesAlgorithm(
     }
   }
 
-  cout<<"finish kusuuzi tyotensyugo kouchiku"<<endl;
-
-  cout<<vertexSetNextOddNumber.size()<<endl;
-
   // 奇数次の頂点集合の最小重み最適マッチングを最小全域木と統合
   for (auto itr = vertexSetNextOddNumber.begin(); itr != vertexSetNextOddNumber.end(); ++itr) {
     int idx = itr->first;
-    cout<<idx<<endl;
     vector<edge_t> edgeData = bigEdgeData.at(idx);
+
     for (i = 0; i < (int)edgeData.size(); i++) {
       edge_t edge = edgeData[i];
+
       if (
         vertexSetNextOddNumber.find(edge.from) != vertexSetNextOddNumber.end() &&
         vertexSetNextOddNumber.find(edge.to) != vertexSetNextOddNumber.end() && 
@@ -194,8 +188,6 @@ void doSearchByChristofidesAlgorithm(
     }
   }
 
-  cout<<"finish macthing"<<endl;
-
   for (i = 0; i < (int)data.size(); i++) {
     vector<edge_t> visitedEdgeData = visited[i];
     // 距離で昇順にソート
@@ -203,8 +195,6 @@ void doSearchByChristofidesAlgorithm(
 
     visited[i] = visitedEdgeData;
   }
-
-  cout<<"finish sort"<<endl;
 
   //  path 構築
   while (visited.size() > 1) {
@@ -223,26 +213,26 @@ void doSearchByChristofidesAlgorithm(
       }
     }
 
-    // 既に訪れた座標をとばす
-    long double minDistance = -1;
-    long double distance;
-    int minDistanceIndex;
-    for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
-      int toIndex = itr->first;
-      if (fromIndex == toIndex) continue;
+    if (i == (int)edgeData.size()) {
+      // 既に訪れた座標をとばす
+      long double minDistance = -1;
+      long double distance;
+      int minDistanceIndex;
+      for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
+        int toIndex = itr->first;
+        if (fromIndex == toIndex) continue;
 
-      distance = calculateDistance(data.at(fromIndex), data.at(toIndex));
+        distance = calculateDistance(data.at(fromIndex), data.at(toIndex));
 
-      if (minDistance == -1 || distance < minDistance) {
-        minDistance = distance;
-        minDistanceIndex = toIndex;
+        if (minDistance == -1 || distance < minDistance) {
+          minDistance = distance;
+          minDistanceIndex = toIndex;
+        }
       }
+      path.push_back(minDistanceIndex);
+      visited.erase(fromIndex);
     }
-    path.push_back(minDistanceIndex);
-    visited.erase(fromIndex);
   }
-  cout<<"finish"<<endl;
-  cout<<path.size()<<endl;
   return;
 }
 

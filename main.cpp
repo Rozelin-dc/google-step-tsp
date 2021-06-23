@@ -147,34 +147,43 @@ void doSearchByChristofidesAlgorithm(
     }
     i++;
   }
+
+  cout<<"finish saisyouzennikigi kouchiku"<<endl;
   
-  unordered_map<int, int> vertexSetNextOddNumber; // 奇数次の頂点集合(インデックスをキー、値はなんでもいい)
+  unordered_map<int, bool> vertexSetNextOddNumber; // 奇数次の頂点集合(インデックスをキー、最小全域木と統合済みかどうかを値に持つ)
   // 奇数次の頂点集合を構築
   for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
     if (itr->second.size() % 2 != 0) {
-      vertexSetNextOddNumber[itr->first] = 1;
+      vertexSetNextOddNumber[itr->first] = false;
     }
   }
 
+  cout<<"finish kusuuzi tyotensyugo kouchiku"<<endl;
+
   // 奇数次の頂点集合の最小重み最適マッチングを最小全域木と統合
-  while (vertexSetNextOddNumber.size() > 0) {
-    int idx = vertexSetNextOddNumber.begin()->first;
-    for (int i = 0; i < (int)bigEdgeData[idx].size(); i++) {
-      edge_t edge = bigEdgeData[idx][i];
+  for (auto itr = vertexSetNextOddNumber.begin(); itr != vertexSetNextOddNumber.end(); ++itr) {
+    int idx = itr->first;
+    vector<edge_t> edgeData = bigEdgeData[idx];
+    for (i = 0; i < (int)edgeData.size(); i++) {
+      edge_t edge = edgeData[i];
       if (
         vertexSetNextOddNumber.find(edge.from) != vertexSetNextOddNumber.end() &&
-        vertexSetNextOddNumber.find(edge.to) != vertexSetNextOddNumber.end()
+        vertexSetNextOddNumber.find(edge.to) != vertexSetNextOddNumber.end() && 
+        vertexSetNextOddNumber.at(edge.from) == false &&
+        vertexSetNextOddNumber.at(edge.to) == false
       ) {
         visited[edge.from].push_back(edge);
         visited[edge.to].push_back(edge);
 
-        vertexSetNextOddNumber.erase(edge.from);
-        vertexSetNextOddNumber.erase(edge.to);
+        vertexSetNextOddNumber.at(edge.from) = true;
+        vertexSetNextOddNumber.at(edge.to) = true;
 
         break;
       }
     }
   }
+
+  cout<<"finish macthing"<<endl;
 
   for (i = 0; i < dataSize; i++) {
     vector<edge_t> visitedEdgeData = visited[i];
@@ -184,6 +193,9 @@ void doSearchByChristofidesAlgorithm(
     visited[i] = visitedEdgeData;
   }
 
+  cout<<"finish sort"<<endl;
+
+  //  path 構築
   while (visited.size() > 1) {
     int fromIndex = path[path.size() - 1];
     for (i = 0; i < (int)visited[fromIndex].size(); i++) {
@@ -199,6 +211,8 @@ void doSearchByChristofidesAlgorithm(
       }
     }
   }
+  cout<<"finish"<<endl;
+  cout<<path.size()<<endl;
   return;
 }
 

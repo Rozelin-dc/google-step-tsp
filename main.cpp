@@ -157,7 +157,7 @@ void doSearchByChristofidesAlgorithm(
   // 奇数次の頂点集合の最小重み最適マッチングを最小全域木と統合
   while (vertexSetNextOddNumber.size() > 0) {
     int idx = vertexSetNextOddNumber.begin()->first;
-    for (int i = 0; i < bigEdgeData[idx].size(); i++) {
+    for (int i = 0; i < (int)bigEdgeData[idx].size(); i++) {
       edge_t edge = bigEdgeData[idx][i];
       if (
         vertexSetNextOddNumber.find(edge.from) != vertexSetNextOddNumber.end() &&
@@ -174,14 +174,14 @@ void doSearchByChristofidesAlgorithm(
     }
   }
 
-  for (i = 0; i < data.size(); i++) {
+  for (i = 0; i < (int)data.size(); i++) {
     // 距離で昇順にソート
     sort(visited[i].begin(), visited[i].end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
   }
 
   while (visited.size() > 1) {
     int fromIndex = path[path.size() - 1];
-    for (i = 0; i < visited[fromIndex].size(); i++) {
+    for (i = 0; i < (int)visited[fromIndex].size(); i++) {
       edge_t edge = visited[fromIndex][i];
       int toIndex = edge.to;
       if (toIndex == fromIndex) toIndex = edge.from;

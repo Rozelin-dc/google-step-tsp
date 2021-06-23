@@ -19,7 +19,7 @@ typedef struct {
 long double calculateDistance(const coordinate_t from, const coordinate_t to);
 void makeEdgeData(const unordered_map<int, coordinate_t>& data, vector<edge_t>& smallEdgeData, unordered_map<int, vector<edge_t>>& bigEdgeData);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
-void doSearchByChristofidesAlgorithm(const int dataSize, const vector<edge_t>& smallEdgeData, unordered_map<int, vector<edge_t>>& bigEdgeData, vector<int>& path);
+void doSearchByChristofidesAlgorithm(const unordered_map<int, coordinate_t>& data, const vector<edge_t>& smallEdgeData, const unordered_map<int, vector<edge_t>>& bigEdgeData, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
 bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path);
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
   readInput(data, targetDataNum);
   makeEdgeData(data, smallEdgeData, bigEdgeData);
-  doSearchByChristofidesAlgorithm(data.size(), smallEdgeData, bigEdgeData, path);
+  doSearchByChristofidesAlgorithm(data, smallEdgeData, bigEdgeData, path);
   // greedySearch(data, path);
 
   bool isTwoOptDone = true;
@@ -68,12 +68,14 @@ void makeEdgeData(
   for (auto itr1 = data.begin(); itr1 != data.end(); ++itr1) {
     coordinate_t from = itr1->second;
     vector<edge_t> fromEdgeData(0);
+
     for (auto itr2 = data.begin(); itr2 != data.end(); ++itr2) {
       coordinate_t to = itr2->second;
       if (from.index == to.index) continue;
 
       long double distance = calculateDistance(from, to);
       edge_t edge = {from.index, to.index, distance};
+
       fromEdgeData.push_back(edge);
       if (from.index < to.index) smallEdgeData.push_back(edge);
     }
@@ -130,22 +132,28 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
 
 /** クリストフィードのアルゴリズムによる探索 */
 void doSearchByChristofidesAlgorithm(
-  const int dataSize,
+  const unordered_map<int, coordinate_t>& data,
   const vector<edge_t>& smallEdgeData,
-  unordered_map<int, vector<edge_t>>& bigEdgeData,
+  const unordered_map<int, vector<edge_t>>& bigEdgeData,
   vector<int>& path
 ) {
   unordered_map<int, vector<edge_t>> visited; // 座標のインデックスをキー、繋がれている辺のデータを値に持つ(座標の最小全域木)
   int i = 0;
 
   // 最小全域木の構築
-  while ((int)visited.size() < dataSize) {
+  while (visited.size() < data.size() && i < (int)smallEdgeData.size()) {
     edge_t edge = smallEdgeData[i];
-    if (visited.find(edge.from) == visited.end() || visited.find(edge.from) == visited.end()) {
+    if (visited.find(edge.from) == visited.end() || visited.find(edge.to) == visited.end()) {
       visited[edge.from].push_back(edge);
       visited[edge.to].push_back(edge);
     }
     i++;
+  }
+
+  if (visited.size() != data.size()) {
+    cerr<<"error!"<<endl;
+    cout<<visited.size()<<", "<<data.size()<<", "<<smallEdgeData.size()<<endl;
+    exit(1);
   }
 
   cout<<"finish saisyouzennikigi kouchiku"<<endl;
@@ -153,17 +161,20 @@ void doSearchByChristofidesAlgorithm(
   unordered_map<int, bool> vertexSetNextOddNumber; // 奇数次の頂点集合(インデックスをキー、最小全域木と統合済みかどうかを値に持つ)
   // 奇数次の頂点集合を構築
   for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
-    if (itr->second.size() % 2 != 0) {
+    if ((itr->second).size() % 2 != 0) {
       vertexSetNextOddNumber[itr->first] = false;
     }
   }
 
   cout<<"finish kusuuzi tyotensyugo kouchiku"<<endl;
 
+  cout<<vertexSetNextOddNumber.size()<<endl;
+
   // 奇数次の頂点集合の最小重み最適マッチングを最小全域木と統合
   for (auto itr = vertexSetNextOddNumber.begin(); itr != vertexSetNextOddNumber.end(); ++itr) {
     int idx = itr->first;
-    vector<edge_t> edgeData = bigEdgeData[idx];
+    cout<<idx<<endl;
+    vector<edge_t> edgeData = bigEdgeData.at(idx);
     for (i = 0; i < (int)edgeData.size(); i++) {
       edge_t edge = edgeData[i];
       if (
@@ -185,7 +196,7 @@ void doSearchByChristofidesAlgorithm(
 
   cout<<"finish macthing"<<endl;
 
-  for (i = 0; i < dataSize; i++) {
+  for (i = 0; i < (int)data.size(); i++) {
     vector<edge_t> visitedEdgeData = visited[i];
     // 距離で昇順にソート
     sort(visitedEdgeData.begin(), visitedEdgeData.end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
@@ -198,18 +209,37 @@ void doSearchByChristofidesAlgorithm(
   //  path 構築
   while (visited.size() > 1) {
     int fromIndex = path[path.size() - 1];
-    for (i = 0; i < (int)visited[fromIndex].size(); i++) {
-      edge_t edge = visited[fromIndex][i];
+    vector<edge_t> edgeData = visited.at(fromIndex);
+
+    for (i = 0; i < (int)edgeData.size(); i++) {
+      edge_t edge = edgeData[i];
       int toIndex = edge.to;
       if (toIndex == fromIndex) toIndex = edge.from;
-      auto itr = visited.find(toIndex);
 
-      if (itr != visited.end()) {
+      if (visited.find(toIndex) != visited.end()) {
         path.push_back(toIndex);
         visited.erase(fromIndex);
         break;
       }
     }
+
+    // 既に訪れた座標をとばす
+    long double minDistance = -1;
+    long double distance;
+    int minDistanceIndex;
+    for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
+      int toIndex = itr->first;
+      if (fromIndex == toIndex) continue;
+
+      distance = calculateDistance(data.at(fromIndex), data.at(toIndex));
+
+      if (minDistance == -1 || distance < minDistance) {
+        minDistance = distance;
+        minDistanceIndex = toIndex;
+      }
+    }
+    path.push_back(minDistanceIndex);
+    visited.erase(fromIndex);
   }
   cout<<"finish"<<endl;
   cout<<path.size()<<endl;

@@ -19,7 +19,7 @@ typedef struct {
 long double calculateDistance(const coordinate_t from, const coordinate_t to);
 void makeEdgeData(const unordered_map<int, coordinate_t>& data, vector<edge_t>& smallEdgeData, unordered_map<int, vector<edge_t>>& bigEdgeData);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
-void doSearchByChristofidesAlgorithm(const unordered_map<int, coordinate_t>& data, const vector<edge_t>& smallEdgeData, unordered_map<int, vector<edge_t>>& bigEdgeData, vector<int>& path);
+void doSearchByChristofidesAlgorithm(const int dataSize, const vector<edge_t>& smallEdgeData, unordered_map<int, vector<edge_t>>& bigEdgeData, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
 bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path);
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
   readInput(data, targetDataNum);
   makeEdgeData(data, smallEdgeData, bigEdgeData);
-  doSearchByChristofidesAlgorithm(data, smallEdgeData, bigEdgeData, path);
+  doSearchByChristofidesAlgorithm(data.size(), smallEdgeData, bigEdgeData, path);
   // greedySearch(data, path);
 
   bool isTwoOptDone = true;
@@ -67,18 +67,20 @@ void makeEdgeData(
 ) {
   for (auto itr1 = data.begin(); itr1 != data.end(); ++itr1) {
     coordinate_t from = itr1->second;
+    vector<edge_t> fromEdgeData(0);
     for (auto itr2 = data.begin(); itr2 != data.end(); ++itr2) {
       coordinate_t to = itr2->second;
       if (from.index == to.index) continue;
 
       long double distance = calculateDistance(from, to);
       edge_t edge = {from.index, to.index, distance};
-      bigEdgeData[from.index].push_back(edge);
+      fromEdgeData.push_back(edge);
       if (from.index < to.index) smallEdgeData.push_back(edge);
     }
 
     // 距離で昇順にソート
-    sort(bigEdgeData[from.index].begin(), bigEdgeData[from.index].end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+    sort(fromEdgeData.begin(), fromEdgeData.end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+    bigEdgeData[from.index] = fromEdgeData;
   }
 
   // 距離で昇順にソート
@@ -128,7 +130,7 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
 
 /** クリストフィードのアルゴリズムによる探索 */
 void doSearchByChristofidesAlgorithm(
-  const unordered_map<int, coordinate_t>& data,
+  const int dataSize,
   const vector<edge_t>& smallEdgeData,
   unordered_map<int, vector<edge_t>>& bigEdgeData,
   vector<int>& path
@@ -137,7 +139,7 @@ void doSearchByChristofidesAlgorithm(
   int i = 0;
 
   // 最小全域木の構築
-  while (visited.size() < data.size()) {
+  while ((int)visited.size() < dataSize) {
     edge_t edge = smallEdgeData[i];
     if (visited.find(edge.from) == visited.end() || visited.find(edge.from) == visited.end()) {
       visited[edge.from].push_back(edge);
@@ -150,7 +152,7 @@ void doSearchByChristofidesAlgorithm(
   // 奇数次の頂点集合を構築
   for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
     if (itr->second.size() % 2 != 0) {
-      vertexSetNextOddNumber[itr->first] = itr->second.size();
+      vertexSetNextOddNumber[itr->first] = 1;
     }
   }
 
@@ -174,9 +176,12 @@ void doSearchByChristofidesAlgorithm(
     }
   }
 
-  for (i = 0; i < (int)data.size(); i++) {
+  for (i = 0; i < dataSize; i++) {
+    vector<edge_t> visitedEdgeData = visited[i];
     // 距離で昇順にソート
-    sort(visited[i].begin(), visited[i].end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+    sort(visitedEdgeData.begin(), visitedEdgeData.end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+
+    visited[i] = visitedEdgeData;
   }
 
   while (visited.size() > 1) {

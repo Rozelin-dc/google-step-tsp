@@ -10,8 +10,16 @@ typedef struct {
   long double y;
 } coordinate_t;
 
+typedef struct {
+  int from;
+  int to;
+  long double distance;
+} edge_t;
+
 long double calculateDistance(const coordinate_t from, const coordinate_t to);
+void makeEdgeData(const unordered_map<int, coordinate_t>& data, vector<edge_t>& smallEdgeData, unordered_map<int, vector<edge_t>>& bigEdgeData);
 void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path);
+void doSearchByChristofidesAlgorithm(const unordered_map<int, coordinate_t>& data, const vector<edge_t>& smallEdgeData, const unordered_map<int, vector<edge_t>>& bigEdgeData, vector<int>& path);
 bool doTwoOpt(const unordered_map<int, coordinate_t>& data, vector<int>& path);
 bool swapFivePoint(const unordered_map<int, coordinate_t>& data, vector<int>& path, const int index);
 bool nearLineSegmentPointPathChange(const unordered_map<int, coordinate_t>& data, vector<int>& path);
@@ -23,9 +31,14 @@ void outputCsv(const vector<int>& path, const string targetDataNum);
 int main(int argc, char *argv[]) {
   string targetDataNum = argv[1];
   unordered_map<int, coordinate_t> data; // インデックスをキー、座標を値に持つ
+  vector<edge_t> smallEdgeData; // 最小限の辺のデータを持つ
+  unordered_map<int, vector<edge_t>> bigEdgeData; // インデックスをキー、その座標からのばせる全ての辺のデータを持つ
   vector<int> path = {0}; // 訪れる座標のインデックスが順に保存されている配列
+
   readInput(data, targetDataNum);
-  greedySearch(data, path);
+  makeEdgeData(data, smallEdgeData, bigEdgeData);
+  doSearchByChristofidesAlgorithm(data, smallEdgeData, bigEdgeData, path);
+  // greedySearch(data, path);
 
   bool isTwoOptDone = true;
   bool isSwapFivePointDone = true;
@@ -33,7 +46,7 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < (int)(data.size() * 2); i++) {
     isSwapFivePointDone = swapFivePoint(data, path, i % (int)data.size());
     if (isTwoOptDone || isSwapFivePointDone || isNearLineSegmentPointPathChange) {
-      isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
+      // isNearLineSegmentPointPathChange = nearLineSegmentPointPathChange(data, path);
       isTwoOptDone = doTwoOpt(data, path);
     }
   }
@@ -44,6 +57,38 @@ int main(int argc, char *argv[]) {
 /** from から to までの距離の二乗を計算 */
 long double calculateDistance(const coordinate_t from, const coordinate_t to) {
   return ((from.x - to.x) * (from.x - to.x)) + ((from.y - to.y) * (from.y - to.y));
+}
+
+/** 全ての辺の長さの二乗を計算し edgeData に保存 */
+void makeEdgeData(
+  const unordered_map<int, coordinate_t>& data,
+  vector<edge_t>& smallEdgeData,
+  unordered_map<int, vector<edge_t>>& bigEdgeData
+) {
+  for (auto itr1 = data.begin(); itr1 != data.end(); ++itr1) {
+    coordinate_t from = itr1->second;
+    vector<edge_t> fromEdgeData(0);
+
+    for (auto itr2 = data.begin(); itr2 != data.end(); ++itr2) {
+      coordinate_t to = itr2->second;
+      if (from.index == to.index) continue;
+
+      long double distance = calculateDistance(from, to);
+      edge_t edge = {from.index, to.index, distance};
+
+      fromEdgeData.push_back(edge);
+      if (from.index < to.index) smallEdgeData.push_back(edge);
+    }
+
+    // 距離で昇順にソート
+    sort(fromEdgeData.begin(), fromEdgeData.end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+    bigEdgeData[from.index] = fromEdgeData;
+  }
+
+  // 距離で昇順にソート
+  sort(smallEdgeData.begin(), smallEdgeData.end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+
+  return;
 }
 
 /** 貪欲法で経路検索 */
@@ -81,6 +126,112 @@ void greedySearch(unordered_map<int, coordinate_t> data, vector<int>& path) {
     // 距離の二乗が最小となる座標を path に追加し、from を data から消去
     path.push_back(minDistanceIndex);
     data.erase(fromIndex);
+  }
+  return;
+}
+
+/** クリストフィードのアルゴリズムによる探索 */
+void doSearchByChristofidesAlgorithm(
+  const unordered_map<int, coordinate_t>& data,
+  const vector<edge_t>& smallEdgeData,
+  const unordered_map<int, vector<edge_t>>& bigEdgeData,
+  vector<int>& path
+) {
+  unordered_map<int, vector<edge_t>> visited; // 座標のインデックスをキー、繋がれている辺のデータを値に持つ(座標の最小全域木)
+  int i = 0;
+
+  // 最小全域木の構築
+  while (visited.size() < data.size() && i < (int)smallEdgeData.size()) {
+    edge_t edge = smallEdgeData[i];
+    if (visited.find(edge.from) == visited.end() || visited.find(edge.to) == visited.end()) {
+      visited[edge.from].push_back(edge);
+      visited[edge.to].push_back(edge);
+    }
+    i++;
+  }
+
+  if (visited.size() != data.size()) {
+    cerr<<"error!"<<endl;
+    exit(1);
+  }
+  
+  unordered_map<int, bool> vertexSetNextOddNumber; // 奇数次の頂点集合(インデックスをキー、最小全域木と統合済みかどうかを値に持つ)
+  // 奇数次の頂点集合を構築
+  for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
+    if ((itr->second).size() % 2 != 0) {
+      vertexSetNextOddNumber[itr->first] = false;
+    }
+  }
+
+  // 奇数次の頂点集合の最小重み最適マッチングを最小全域木と統合
+  for (auto itr = vertexSetNextOddNumber.begin(); itr != vertexSetNextOddNumber.end(); ++itr) {
+    int idx = itr->first;
+    vector<edge_t> edgeData = bigEdgeData.at(idx);
+
+    for (i = 0; i < (int)edgeData.size(); i++) {
+      edge_t edge = edgeData[i];
+
+      if (
+        vertexSetNextOddNumber.find(edge.from) != vertexSetNextOddNumber.end() &&
+        vertexSetNextOddNumber.find(edge.to) != vertexSetNextOddNumber.end() && 
+        vertexSetNextOddNumber.at(edge.from) == false &&
+        vertexSetNextOddNumber.at(edge.to) == false
+      ) {
+        visited[edge.from].push_back(edge);
+        visited[edge.to].push_back(edge);
+
+        vertexSetNextOddNumber.at(edge.from) = true;
+        vertexSetNextOddNumber.at(edge.to) = true;
+
+        break;
+      }
+    }
+  }
+
+  for (i = 0; i < (int)data.size(); i++) {
+    vector<edge_t> visitedEdgeData = visited[i];
+    // 距離で昇順にソート
+    sort(visitedEdgeData.begin(), visitedEdgeData.end(),[](const edge_t &alpha, const edge_t &beta){return alpha.distance < beta.distance;});
+
+    visited[i] = visitedEdgeData;
+  }
+
+  //  path 構築
+  while (visited.size() > 1) {
+    int fromIndex = path[path.size() - 1];
+    vector<edge_t> edgeData = visited.at(fromIndex);
+
+    for (i = 0; i < (int)edgeData.size(); i++) {
+      edge_t edge = edgeData[i];
+      int toIndex = edge.to;
+      if (toIndex == fromIndex) toIndex = edge.from;
+
+      if (visited.find(toIndex) != visited.end()) {
+        path.push_back(toIndex);
+        visited.erase(fromIndex);
+        break;
+      }
+    }
+
+    if (i == (int)edgeData.size()) {
+      // 既に訪れた座標をとばす
+      long double minDistance = -1;
+      long double distance;
+      int minDistanceIndex;
+      for (auto itr = visited.begin(); itr != visited.end(); ++itr) {
+        int toIndex = itr->first;
+        if (fromIndex == toIndex) continue;
+
+        distance = calculateDistance(data.at(fromIndex), data.at(toIndex));
+
+        if (minDistance == -1 || distance < minDistance) {
+          minDistance = distance;
+          minDistanceIndex = toIndex;
+        }
+      }
+      path.push_back(minDistanceIndex);
+      visited.erase(fromIndex);
+    }
   }
   return;
 }

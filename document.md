@@ -23,6 +23,10 @@ https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/ で結果
 
 座標を表す構造体。`index`が座標のインデックス、`x`, `y`が座標のx座標、y座標を表す。
 
+#### `edge_t`
+
+辺の情報を表す構造体。`from`, `to`が辺の両端の座標のインデックス、`distance`がその辺の長さの二乗を表す。
+
 #### `targetDataNum`
 
 実行時引数として受け取った`num`を保存する変数。
@@ -41,11 +45,19 @@ https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/ で結果
 
 引数として座標を2つ受け取り、その2点間の距離の二乗を計算する関数。二乗にしたのは、少しでも誤差を少なくするためである。
 
+#### `makeEdgeData`
+
+辺の情報を構築する関数。`smallEdgeData`は、全ての辺の情報をダブりなく保存する配列。`bigEdgeData`は、座標のインデックスをキー、その座標からひける辺の情報がすべて保存されている配列を値に持つハッシュテーブル。辺の情報を全て保存した後に、各配列を辺の長さに基づいて昇順にソートしている。
+
 #### `greedySearch`
 
 `data`と`path`を引数として受け取り、貪欲法で経路を検索する関数。`path`には最初に訪れる座標のインデックスのみ保存されている必要がある。
 
 貪欲法では`data`が全探索されるので、実行時間を短くするため、既に`path`に保存されている座標については`data`から削除するようにした。
+
+#### `doSearchByChristofidesAlgorithm`
+
+[このWikipedia](https://ja.wikipedia.org/wiki/%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%88%E3%83%95%E3%82%A3%E3%83%BC%E3%83%89%E3%81%AE%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0)にあるとおりにクリストフィードのアルゴリズムによる探索を行う関数。
 
 #### `doTwoOpt`
 

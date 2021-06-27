@@ -11,7 +11,7 @@ g++ main.cpp
 a.exe num
 ```
 
-`num`は`input.csv`の番号で、`input_${num}.csv`を読み込んでtspを解き、結果を`output_${num}.csv`に出力する。(`num`は0~6の範囲の数字である必要がある。)
+`num`は`input.csv`の番号で、`input_${num}.csv`を読み込んでtspを解き、結果を`output_${num}.csv`に出力する。(`num`は0~7の範囲の数字である必要がある。)
 
 https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/ で結果を確認できる。
 
@@ -57,7 +57,7 @@ https://rozelin-dc.github.io/google-step-tsp/visualizer/build/default/ で結果
 
 #### `doSearchByChristofidesAlgorithm`
 
-[このWikipedia](https://ja.wikipedia.org/wiki/%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%88%E3%83%95%E3%82%A3%E3%83%BC%E3%83%89%E3%81%AE%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0)にあるとおりにクリストフィードのアルゴリズムによる探索を行う関数。
+[このWikipediaの記事](https://ja.wikipedia.org/wiki/%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%88%E3%83%95%E3%82%A3%E3%83%BC%E3%83%89%E3%81%AE%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0)にあるとおりにクリストフィードのアルゴリズムによる探索を行う関数。
 
 #### `doTwoOpt`
 
